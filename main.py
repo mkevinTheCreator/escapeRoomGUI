@@ -8,7 +8,7 @@ from zigpy.config import (
 )
 from PySide6.QtGui import Qt, QColor, QFontDatabase, QFont 
 import sys
-from PySide6.QtCore import QUrl,Qt,QTimer 
+from PySide6.QtCore import QUrl,Qt,QTimer ,Signal
 from PySide6.QtMultimedia import QSoundEffect
 from PySide6.QtWidgets import (
     QApplication, QLabel, QMainWindow, QWidget,
@@ -21,7 +21,7 @@ def run_loop(loop):
 
 CONFIG = {
     CONF_DEVICE: {
-        CONF_DEVICE_PATH: "COM6",  # adjust if needed
+        CONF_DEVICE_PATH: "COM3",  # adjust if needed 6 == school 3 == home
     },
     "database_path": "G:/zigpy_db/zigbee.db",
     
@@ -59,24 +59,32 @@ def sumForListValues(list:list):
 
 async def checkEffects():
    secondPuzzle = 3
+  
    for ieee, ep in endpoints.items():
         if listOfValues[0]  == 32 and listOfValues[1] == 22 and listOfValues[2] == 22 and listOfValues[3] == 24:
+            labelCheckingInput.setText("Correct Input")
+            window.effectSolved.play()
             changeCurrentPage(secondPuzzle)
+             
         elif listOfValues[0] > 31 and sumForListValues(list=listOfValues) <= 100:
             await ep.on_off.on()
+            labelCheckingInput.setText("Invalid Input")
         else:
             await ep.on_off.off()
+           
+            labelCheckingInput.setText("Invalid Input")
 
 async def changeValue(value , i ):
     listOfValues[i] = value
     await checkEffects()
 
-def changeCurrentPage(page:int):
-        stack.setCurrentIndex(page)
-
+def changeCurrentPage(page: int):
+    window.changePageSignal.emit(page)
+   
 def changeSetuMessage(text:str):
     labelSetupScreen.setText(text)
 
+labelCheckingInput:QLabel = None
 labelSetupScreen:QLabel = None
 stack = None
 
@@ -88,12 +96,16 @@ loop.create_task(main())
 threading.Thread(target=run_loop,args=(loop,),daemon=True).start()
 
 class MainWindow(QMainWindow):
-    
+    changePageSignal = Signal(int)
     def __init__(self):
+        
         global stack
+        global labelCheckingInput
         global labelSetupScreen
+        labelCheckingInput = QLabel("Invalid Input")
         stack = QStackedWidget()
         super().__init__()
+        self.changePageSignal.connect(stack.setCurrentIndex)
         self.setWindowTitle("My App")
         QFontDatabase.addApplicationFont("fonts/Geostar-Regular.ttf")
         layout = QGridLayout()
@@ -103,8 +115,6 @@ class MainWindow(QMainWindow):
         headline.setStyleSheet("""
             QLabel{
                 color: #E5791B;
-
-
             }
         """)
         headline_font = QFont("Geostar", 36)
@@ -121,8 +131,11 @@ class MainWindow(QMainWindow):
         self.effect = QSoundEffect()
         self.effect.setSource(QUrl.fromLocalFile("G:\\media\\sounds\\dial2.wav"))
         self.effect.setVolume(0.5)
+        self.effectSolved = QSoundEffect()
+        self.effectSolved.setSource(QUrl.fromLocalFile("G:\\media\\sounds\\solved.wav"))
+        self.effectSolved.setVolume(0.5)
         labels = ["Licht","Antrieb","Hitzeschild","Klimaanlage"]
-       
+
         for i in range(1,5,1):
             # --- 1. CONTAINER BOX ---
             title = QLabel(labels[i-1])
@@ -232,11 +245,16 @@ class MainWindow(QMainWindow):
 
             dial.valueChanged.connect(lambda v, l=label: l.setText(f"{v}%"))
             dial.valueChanged.connect(progressBar.setValue)
-            
+            dial.valueChanged.connect(lambda _,l=labelCheckingInput: l.setText("Checking Input"))
+    
             dial.valueChanged.connect(
-                lambda value, i=i-1: asyncio.run_coroutine_threadsafe(
-                    changeValue(value,i),loop
+                lambda value, i=i-1: QTimer.singleShot(
+                    2000,
+                    lambda: asyncio.run_coroutine_threadsafe(
+                    changeValue(value, i),
+                    loop
                     )
+                )
             )
             dial.valueChanged.connect(self.effect.play)
           
@@ -253,6 +271,13 @@ class MainWindow(QMainWindow):
             layout.addWidget(box, 2, i, 3, 1)
 
         # Row 3
+        
+        labelCheckingInput.setFont(QFont("Geostar",25,QFont.Weight.Bold))
+        labelCheckingInput.setStyleSheet("color: #FFFFFF")
+        labelCheckingInput.setAlignment(Qt.AlignCenter)
+        layout.addWidget(labelCheckingInput,5,0,1,6)
+     
+
         firstPuzzle = QWidget()
         firstPuzzle.setObjectName("MainContainer")  # Give it a unique ID
         firstPuzzle.setLayout(layout)
@@ -281,7 +306,15 @@ class MainWindow(QMainWindow):
         buttonSetupScreen.setStyleSheet("color: #FFFFFF; border: 2px solid white; border-radius: 5px;" )
         buttonSetupScreen.clicked.connect(lambda _: (
             stack.setCurrentIndex(1),
-            QTimer.singleShot(5000, lambda: stack.setCurrentIndex(2))
+            QTimer.singleShot(5000, lambda: (stack.setCurrentIndex(2),
+                        headline.setStyleSheet("""
+                            QLabel{
+                                color: #E5791B;
+                                margin:50px;
+                            }
+                        """)
+                    )
+                )
             )
         )
         layoutSetupScreen = QVBoxLayout()
@@ -310,6 +343,7 @@ class MainWindow(QMainWindow):
         """)
         labelErrorMessage = QLabel("ERROR | RESTART WATTARIUM")
         labelErrorMessage.setFont(QFont("Geostar",50,QFont.Weight.Bold))
+
         labelErrorMessage.setStyleSheet("color: #FD450A; border: 2px solid red;")
         labelErrorMessage.setAlignment(Qt.AlignCenter)
         FontGlowEffect(labelErrorMessage,QColor(253,69,10),15,20)
@@ -331,7 +365,11 @@ class MainWindow(QMainWindow):
         labelSecondPuzzle.setAlignment(Qt.AlignCenter)
         FontGlowEffect(labelSecondPuzzle,QColor(255,255,255),15,20)
         layoutSecondPuzzle = QGridLayout()
-        layoutSecondPuzzle.addWidget(labelSecondPuzzle)
+        layoutSecondPuzzle.addWidget(labelSecondPuzzle,1,0,1,7)
+        boxSecondPuzzle = QWidget()
+        boxSecondPuzzle.setStyleSheet("""QWidget{
+                                      background-color:white;}""")
+        layoutSecondPuzzle.addWidget(boxSecondPuzzle,2,1,6,6)
         secondPuzzle.setLayout(layoutSecondPuzzle)
         stack.addWidget(secondPuzzle)
 
