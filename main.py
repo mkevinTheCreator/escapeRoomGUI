@@ -323,15 +323,15 @@ class MainWindow(QMainWindow):
         secondPuzzle = QWidget()
         
         secondPuzzle.setStyleSheet("""
-            background-color: #000000;
+            background-color: #1B2024;
         """)
-        labelTmp = QLabel("Second Puzzle")
-        labelTmp.setFont(QFont("Geostar",70,QFont.Weight.Bold))
-        labelTmp.setStyleSheet("color: #FFFFFF")
-        labelTmp.setAlignment(Qt.AlignCenter)
-        FontGlowEffect(labelTmp,QColor(255,255,255),15,20)
+        labelSecondPuzzle = QLabel("Navigation")
+        labelSecondPuzzle.setFont(QFont("Geostar",70,QFont.Weight.Bold))
+        labelSecondPuzzle.setStyleSheet("color: #FFFFFF")
+        labelSecondPuzzle.setAlignment(Qt.AlignCenter)
+        FontGlowEffect(labelSecondPuzzle,QColor(255,255,255),15,20)
         layoutSecondPuzzle = QGridLayout()
-        layoutSecondPuzzle.addWidget(labelTmp)
+        layoutSecondPuzzle.addWidget(labelSecondPuzzle)
         secondPuzzle.setLayout(layoutSecondPuzzle)
         stack.addWidget(secondPuzzle)
 
