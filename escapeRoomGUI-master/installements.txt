@@ -1,0 +1,18 @@
+install CP210x USB-to_UART driver from Silicon Labs
+go to 
+    -> Device manager 
+    -> other devices 
+    -> sonoff dongle
+    -> update driver 
+    -> choose extracted zip in downloads 
+    -> change com number if necessary 
+
+when not working delete.venv and create new venv with 
+python -m venv venv 
+venv\Scripts\Activate.ps1
+then use pip to install following packages  
+    pip install Pyside6
+    pip install asyncio
+    pip install bellows
+    pip install zigpy
+    pip install threading 
