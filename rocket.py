@@ -28,3 +28,4 @@ class Rocket(QWidget):
         painter.translate(self.width() / 2, self.height() / 2)
         painter.rotate(self.angle)
         painter.drawPixmap(-pixmap.width() // 2, -pixmap.height() // 2, pixmap)
+
