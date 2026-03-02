@@ -417,6 +417,7 @@ class MainWindow(QMainWindow):
                     on_change("", "")
                 if variableA == "5" and variableB == "8" and variableC == "2" and local_pos.x() == 1133 and local_pos.y() == 766:  # rocket must be 200 -100
                     stack.setCurrentIndex(4)
+                    self.effectSolved.play()
                     return
 
                 print(variableA + variableB + variableC + " " + str(local_pos.x()) + " " + str(local_pos.y()))
